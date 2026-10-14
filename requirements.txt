@@ -1,0 +1,9 @@
+# PyTorch with CUDA is installed separately, see README:
+#   pip install torch==2.14.1 --index-url https://download.pytorch.org/whl/cu126
+# Versions below are the ones all runs in runs/ were made with (Python 3.12, Windows).
+transformers==5.19.0
+tokenizers==0.23.3
+safetensors==0.8.0
+accelerate==1.15.0
+huggingface_hub==2.2.0
+matplotlib==3.11.2

@@ -1,0 +1,17 @@
+{
+	"model": "google/gemma-3-4b-it",
+	"neologism": "~card",
+	"concept": "card",
+	"init_word": " accurate",
+	"train_lang": "en",
+	"n_pairs": 575,
+	"offset": 0,
+	"seed": 0,
+	"epochs": 2,
+	"lr": 0.01,
+	"beta": 0.02,
+	"grad_accum": 1,
+	"norm_penalty": 0.0,
+	"embedding_rms": 0.9964768290519714,
+	"embedding_median_norm": 50.42761993408203
+}
