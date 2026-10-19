@@ -19,7 +19,7 @@ from transformers import AddedToken, AutoModelForCausalLM, AutoTokenizer
 
 import config
 # Работа с файлами живёт в files.py (без PyTorch); здесь просто даём к ней доступ.
-from neolib.files import append_jsonl, data_path, read_jsonl, run_path, setup_console, write_jsonl
+from neolib.files import append_jsonl, data_path, read_jsonl, run_path, setup_console, write_jsonl  # noqa: F401
 
 
 # ---------- мелочи ----------
@@ -42,6 +42,7 @@ def gpu_memory_report():
 # ---------- модель ----------
 
 def pick_dtype(device):
+	"""Тип чисел для модели: из config.DTYPE или по возможностям видеокарты."""
 	if device != "cuda":
 		return torch.float32
 	if config.DTYPE == "bfloat16":
@@ -276,6 +277,7 @@ class Neologism(torch.nn.Module):
 
 
 def save_neologism(path, vector, init_vector, meta):
+	"""Сохраняет обученный и стартовый вектор вместе с настройками пробега."""
 	folder = os.path.dirname(path)
 	if folder:
 		os.makedirs(folder, exist_ok=True)
@@ -333,6 +335,7 @@ def apo_up_loss(lc, lr, lc0, lr0, beta):
 # ---------- генерация ----------
 
 def eos_token_ids(model, tokenizer):
+	"""Все токены конца ответа (у Gemma их несколько)."""
 	ids = set()
 	gen_eos = model.generation_config.eos_token_id
 	if isinstance(gen_eos, int):

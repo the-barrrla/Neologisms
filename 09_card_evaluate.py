@@ -13,6 +13,7 @@
 base, short_en, short_native и control те же, что в основном опыте с ~short (тот же текст
 промпта, тот же стартовый вектор), поэтому их можно взять готовыми: --reuse-from b002.
 Из другого запуска ~card берутся ещё target, target_en и four, а control — если стартовое слово то же.
+Можно указать несколько запусков: --reuse-from card_en b002.
 
 Запуск: python 09_card_evaluate.py --run card_en --reuse-from b002
 Повторное обучение ~card: python 09_card_evaluate.py --run card_concise --reuse-from card_en
@@ -34,10 +35,12 @@ SAME_AS_OTHER_FOR_EN = ["target_en", "short_native"]
 # до буквы (из запуска ~short подходят base, short_en, short_native; из запуска ~card — ещё target,
 # target_en и four). Совпадение текста проверяется, так что чужая «явная просьба» не подмешается.
 REUSABLE = ["base", "target", "target_en", "four", "short_en", "short_native"]
+NEOLOGISM_TOKENS = ["~short", config.CARD_NEOLOGISM]
 CHUNK = 64
 
 
 def suffix_for(condition, lang):
+	"""Приписка к вопросу для условия проверки."""
 	if condition == "base":
 		return ""
 	if condition == "target":
@@ -53,17 +56,25 @@ def suffix_for(condition, lang):
 	return common.neologism_suffix(lang)
 
 
-def reuse_answers(args, saved, out_path, done):
-	"""Копирует из запуска ~short ответы, промпт которых совпадает с нашим до буквы.
+def control_suffixes(lang):
+	"""Приписки, при которых control даёт те же числа: на месте ~short или ~card стоит стартовый вектор."""
+	suffixes = []
+	for token in NEOLOGISM_TOKENS:
+		suffixes.append(config.TEMPLATES[lang]["neologism"].format(neo=token))
+	return suffixes
+
+
+def reuse_answers(args, other_run, saved, out_path, done):
+	"""Копирует из другого запуска ответы, промпт которых совпадает с нашим до буквы.
 	control берётся, если стартовые векторы равны: на месте ~short и ~card стоит один и тот же вектор,
 	а остальной текст приписки одинаковый, так что модель получает те же числа."""
-	other_saved = common.load_neologism(common.run_path(args.reuse_from, "neologism.pt"))
+	other_saved = common.load_neologism(common.run_path(other_run, "neologism.pt"))
 	same_init = torch.equal(other_saved["init_vector"], saved["init_vector"])
 	if not same_init:
-		print("Стартовые векторы разные — control посчитаю заново.")
+		print(f"У {other_run} другой стартовый вектор — control оттуда не беру.")
 	rows = []
 	counts = {}
-	for row in common.read_jsonl(common.run_path(args.reuse_from, "generations.jsonl")):
+	for row in common.read_jsonl(common.run_path(other_run, "generations.jsonl")):
 		key = (row["id"], row["lang"], row["condition"])
 		if row["lang"] not in args.langs or row["condition"] not in args.conditions or key in done:
 			continue
@@ -72,12 +83,12 @@ def reuse_answers(args, saved, out_path, done):
 		if row["condition"] == "control":
 			if not same_init:
 				continue
-			expected = config.TEMPLATES[row["lang"]]["neologism"].format(neo=other_saved["meta"].get("neologism", "~short"))
+			expected = control_suffixes(row["lang"])
 		elif row["condition"] in REUSABLE:
-			expected = suffix_for(row["condition"], row["lang"])
+			expected = [suffix_for(row["condition"], row["lang"])]
 		else:
 			continue
-		if row.get("suffix", "") != expected:
+		if row.get("suffix", "") not in expected:
 			continue
 		rows.append(row)
 		done.add(key)
@@ -86,7 +97,7 @@ def reuse_answers(args, saved, out_path, done):
 	parts = []
 	for name, count in counts.items():
 		parts.append(f"{name} {count}")
-	print(f"Взято готовых ответов из {args.reuse_from}: {len(rows)} ({', '.join(parts)})")
+	print(f"Взято готовых ответов из {other_run}: {len(rows)} ({', '.join(parts)})")
 
 
 def main():
@@ -96,7 +107,8 @@ def main():
 	parser.add_argument("--langs", nargs="+", default=config.LANGS)
 	parser.add_argument("--conditions", nargs="+", default=CONDITIONS, choices=CONDITIONS)
 	parser.add_argument("--limit", type=int, default=0, help="взять только первые N вопросов")
-	parser.add_argument("--reuse-from", help="запуск, из которого взять готовые ответы условий без обученного вектора")
+	parser.add_argument("--reuse-from", nargs="+", default=[],
+		help="запуски, из которых взять готовые ответы условий без обученного вектора (можно несколько)")
 	args = parser.parse_args()
 	common.set_seed(config.SEED)
 	config.NEOLOGISM = config.CARD_NEOLOGISM
@@ -117,8 +129,8 @@ def main():
 			done.add((row["id"], row["lang"], row["condition"]))
 		print(f"Уже готово ответов: {len(done)}")
 
-	if args.reuse_from:
-		reuse_answers(args, saved, out_path, done)
+	for other_run in args.reuse_from:
+		reuse_answers(args, other_run, saved, out_path, done)
 
 	model, tokenizer, neo_id = common.load_model_and_tokenizer()
 

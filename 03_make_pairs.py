@@ -22,6 +22,7 @@ from neolib import common, metrics
 
 
 def generate_raw(questions, lang):
+	"""Два ответа на каждый вопрос: обычный (плохой пример) и по явной инструкции (хороший)."""
 	model, tokenizer, neo_id = common.load_model_and_tokenizer()
 	plain_texts = []
 	short_texts = []
@@ -53,6 +54,7 @@ def generate_raw(questions, lang):
 
 
 def is_short_enough(chosen_words, rejected_words):
+	"""Хороший ответ не длиннее CHOSEN_MAX_WORDS слов и не длиннее CHOSEN_MAX_RATIO от плохого."""
 	if chosen_words == 0:
 		return False
 	if chosen_words > config.CHOSEN_MAX_WORDS:
@@ -61,6 +63,7 @@ def is_short_enough(chosen_words, rejected_words):
 
 
 def filter_pairs(raw, lang, fallback_truncate):
+	"""Оставляет пары, где хороший ответ не обрезан и достаточно короткий, а оба ответа на нужном языке."""
 	pairs = []
 	reasons = {"обрезан хороший": 0, "не тот язык": 0, "недостаточно короткий": 0}
 	n_fallback = 0

@@ -26,6 +26,7 @@ DOLLY_CATEGORIES = {"open_qa", "general_qa", "brainstorming", "creative_writing"
 
 
 def is_usable(question, seen):
+	"""Вопрос непустой, ещё не встречался, не длиннее лимита и без неологизма."""
 	if not question or question in seen:
 		return False
 	if len(question) > config.MAX_QUESTION_CHARS:

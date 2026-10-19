@@ -91,6 +91,7 @@ def fmt_percent(value):
 
 
 def summarize(grouped):
+	"""По языкам и условиям: длина ответов, доля обрезанных и ответов на нужном языке, доля разрыва."""
 	summary = []
 	langs = []
 	for lang in config.LANGS:

@@ -244,6 +244,7 @@ def escape_tsv(text):
 
 
 def unescape_tsv(text):
+	"""Обратное к escape_tsv."""
 	result = []
 	i = 0
 	while i < len(text):

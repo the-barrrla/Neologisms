@@ -79,6 +79,7 @@ def group_rows(rows):
 
 
 def triples_for(by_condition, condition, measure):
+	"""Тройки (без приписки, условие, явная инструкция) по вопросам, где есть все три ответа."""
 	triples = []
 	for question_id in by_condition.get("base", {}):
 		if question_id not in by_condition.get(condition, {}):
@@ -94,6 +95,7 @@ def triples_for(by_condition, condition, measure):
 
 
 def closure_with_ci(by_condition, condition, measure):
+	"""Доля разрыва, её 95% интервал и число вопросов."""
 	triples = triples_for(by_condition, condition, measure)
 	if not triples:
 		return float("nan"), float("nan"), float("nan"), 0
@@ -103,6 +105,7 @@ def closure_with_ci(by_condition, condition, measure):
 
 
 def ordered_langs(grouped):
+	"""Языки в порядке config.LANGS, затем остальные."""
 	langs = []
 	for lang in config.LANGS:
 		if lang in grouped:
@@ -114,6 +117,7 @@ def ordered_langs(grouped):
 
 
 def summarize(grouped):
+	"""По языкам и условиям: средние меры формата и доли разрыва по каждой мере."""
 	summary = []
 	for lang in ordered_langs(grouped):
 		by_condition = grouped[lang]

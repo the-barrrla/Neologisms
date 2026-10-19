@@ -32,6 +32,7 @@ from neolib import card, common, metrics
 
 
 def build_examples(pairs, tokenizer, neo_id, lang):
+	"""Токены промпта и обоих ответов для каждой пары; ответы обрезаются до MAX_RESPONSE_TOKENS."""
 	suffix = common.neologism_suffix(lang)
 	examples = []
 	for pair in pairs:
@@ -105,7 +106,7 @@ def main():
 	parser.add_argument("--offset", type=int, default=0, help="сначала пропустить N пар (вместе с --limit даёт другой поднабор)")
 	parser.add_argument("--seed", type=int, default=config.SEED, help="зерно случайности (порядок пар и т. п.)")
 	parser.add_argument("--beta", type=float, default=config.BETA, help="крутизна потери APO-up (меньше — потеря позже насыщается)")
-	parser.add_argument("--init-word", default=config.INIT_WORD, help="обычное слово, с вектора которого начинается обучение, например concise (пробел впереди добавится сам)")
+	parser.add_argument("--init-word", default=config.INIT_WORD, help="обычное слово, с вектора которого начинается обучение, например concise (пробел впереди добавится сам); random — случайный вектор типичной длины")
 	parser.add_argument("--concept", default="short", choices=["short", "card"], help="какой неологизм учить: ~short или ~card")
 	parser.add_argument("--grad-accum", type=int, default=config.GRAD_ACCUM, help="сколько пар на один шаг оптимизатора")
 	args = parser.parse_args()
@@ -133,10 +134,17 @@ def main():
 	examples = build_examples(pairs, tokenizer, neo_id, args.lang)
 
 	rms, median_norm = common.embedding_stats(model)
-	init_ids = common.encode(tokenizer, args.init_word)
-	if init_ids.shape[0] != 1:
-		raise SystemExit(f"Стартовое слово {args.init_word!r} режется на {init_ids.shape[0]} токена — возьмите другое слово.")
-	init_vector = common.initial_vector(model, tokenizer, args.init_word)
+	if args.init_word.strip() == "random":
+		# Старт без смысла: случайное направление с типичной длиной эмбеддинга (зависит от --seed).
+		generator = torch.Generator().manual_seed(args.seed)
+		dimension = model.get_input_embeddings().weight.shape[1]
+		init_vector = torch.randn(dimension, generator=generator)
+		init_vector = init_vector / init_vector.norm() * median_norm
+	else:
+		init_ids = common.encode(tokenizer, args.init_word)
+		if init_ids.shape[0] != 1:
+			raise SystemExit(f"Стартовое слово {args.init_word!r} режется на {init_ids.shape[0]} токена — возьмите другое слово.")
+		init_vector = common.initial_vector(model, tokenizer, args.init_word)
 	print(f"Типичный эмбеддинг: RMS координаты {rms:.4f}, медианная норма {median_norm:.2f}")
 	print(f"Стартовое слово {args.init_word!r}: норма {init_vector.norm().item():.2f}")
 

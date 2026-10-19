@@ -29,6 +29,39 @@ def test_detect_language():
 	assert metrics.detect_language("Бул сөзүн неге аспан көк? Бирок, бул сөздөрдүн толук маалыматы менен жооп береймем.") == "ky"
 	assert metrics.detect_language("Фотосинтез - это процесс, при котором растения и некоторые виды微生物合成有机物质，如葡萄糖和淀粉。这个过程主要在叶绿体中的叶绿素中进行。") == "zh"
 	assert metrics.detect_language("Қазақстанның астанасы — Астана қаласы. Ол елдің солтүстігінде орналасқан.") == "kk"
+	# Настоящий «казахский перевод» Gemma, который оказался украинским:
+	assert metrics.detect_language("Ось деякі речі, які їм подобається: природа, китайська їжа, жива музика.") == "uk"
+
+
+def test_translation_problems():
+	# Хороший перевод — без замечаний.
+	assert metrics.translation_problems("Why is the sky blue?", "Почему небо голубое?", "ru") == []
+	assert metrics.translation_problems("Why is the sky blue?", "Неге аспан көк?", "kk") == []
+	# Настоящие ошибки Gemma-3-4B при переводе тестовых вопросов:
+	joke = metrics.translation_problems("Write a joke about fruit.", "Почему яблоки не ходят в кино? Потому что у них есть яблоки.", "ru")
+	assert len(joke) == 1 and "длиннее" in joke[0]
+	bash = metrics.translation_problems(
+		"I have a Python script called preprocess.py. Write a bash command that runs it on all the files that end with "
+		"\".checkpoint\" in all the subdirectories, subsubdirectories, etc. of the checkpoints/ directory.",
+		"find checkpoints/ -name \"*.checkpoint\" -exec python preprocess.py {} \\;",
+		"ru",
+	)
+	assert len(bash) == 2
+	russian_instead = metrics.translation_problems(
+		"What's a good itenary for a trip to Vegas? Planning a trip for 3.5 days, please exclude any museums",
+		"Лайн-программа для поездки в Лас-Вегас? Планирую поездку на 3,5 дня, пожалуйста, исключите любые музеи.",
+		"kk",
+	)
+	assert russian_instead == ["язык перевода похож на 'ru'"]
+	chinese = metrics.translation_problems(
+		"How much of sexual orientation is innate? Can being gay or straight be societally influenced?",
+		"性取向дың қанша бөлігі тутық екен? ЛГБТ болу немесе гетеросексуал болу орталықтан ыдыраумен шектелмей ме?",
+		"kk",
+	)
+	assert len(chinese) == 1 and chinese[0].startswith("чужие символы")
+	# Много латиницы из-за команды LaTeX — это не ошибка.
+	assert metrics.translation_problems("what does \\multirow{5}{*} do in latex", "Что делает \\multirow{5}{*} в LaTeX?", "ru") == []
+	assert "обрезан по длине" in metrics.translation_problems("Hello there my friend", "Привет, мой друг", "ru", truncated=True)
 
 
 def test_first_sentences():
@@ -76,6 +109,7 @@ def main():
 	tests = [
 		test_count_words,
 		test_detect_language,
+		test_translation_problems,
 		test_first_sentences,
 		test_mean_median_percentile,
 		test_gap_closure,

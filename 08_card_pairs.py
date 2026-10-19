@@ -39,6 +39,7 @@ def card_target(lang):
 
 
 def rewrite_text(question, draft, lang):
+	"""Просьба переписать черновик ответа по явной инструкции ~card."""
 	label, line = REWRITE[lang]
 	draft = draft.strip()[:DRAFT_MAX_CHARS]
 	return question.strip() + "\n\n" + label + "\n\n" + draft + "\n\n" + line + " " + card_target(lang)
@@ -56,6 +57,7 @@ def load_plain_answers(lang):
 
 
 def is_good_card(text, truncated, lang):
+	"""Карточка годится: не обрезана, на нужном языке и выполняет все четыре условия."""
 	if truncated or not text:
 		return False
 	if metrics.detect_language(text) != lang:
@@ -64,6 +66,7 @@ def is_good_card(text, truncated, lang):
 
 
 def generate_raw(questions, lang):
+	"""Сырые ответы на каждый вопрос: обычный, карточка по инструкции, переписанная карточка (если первая не годится) и «почти карточка»."""
 	model, tokenizer, neo_id = common.load_model_and_tokenizer()
 	plain = load_plain_answers(lang)
 	missing = []
@@ -150,6 +153,7 @@ def usable_near_miss(row, lang):
 
 
 def usable_plain(row, lang):
+	"""Обычный ответ годится как плохой: он есть, на нужном языке и не является карточкой."""
 	text = row["plain"]
 	if not text:
 		return False
@@ -159,6 +163,7 @@ def usable_plain(row, lang):
 
 
 def filter_pairs(raw, lang):
+	"""Хороший ответ — карточка (или переписанная), плохой — «почти карточка» или обычный ответ, примерно поровну."""
 	pairs = []
 	reasons = {"нет годной карточки": 0, "нет годного плохого ответа": 0}
 	n_near = 0

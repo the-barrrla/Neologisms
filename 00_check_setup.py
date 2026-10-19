@@ -42,6 +42,7 @@ CHECK_QUESTIONS = {
 
 
 def check_templates(tokenizer, neo_id):
+	"""Неологизм встречается ровно один раз в приписке каждого языка."""
 	print("\n[1] Неологизм в шаблонах")
 	all_ok = True
 	for lang in config.LANGS:
@@ -60,6 +61,7 @@ def check_templates(tokenizer, neo_id):
 
 
 def check_identity(model, tokenizer, neo_id):
+	"""Генерация через векторы без неологизма совпадает с обычной."""
 	print("\n[2] Без неологизма путь через векторы не меняет ответы")
 	all_same = True
 	for question in CHECK_QUESTIONS["en"][:2]:
@@ -79,6 +81,7 @@ def check_identity(model, tokenizer, neo_id):
 
 
 def check_languages(model, tokenizer, neo_id):
+	"""Отвечает ли модель на каждом языке на нём же (смотреть глазами)."""
 	print("\n[3] Знает ли модель языки (смотрите на смысл ответов глазами!)")
 	for lang in config.LANGS:
 		questions = CHECK_QUESTIONS.get(lang)

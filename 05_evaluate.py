@@ -37,6 +37,7 @@ CHUNK = 64
 
 
 def suffix_for(condition, lang):
+	"""Приписка к вопросу для условия проверки."""
 	if condition == "base":
 		return ""
 	if condition == "target":

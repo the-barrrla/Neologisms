@@ -50,6 +50,7 @@ MARKDOWN_ANYWHERE_RES = [
 
 
 def is_emoji(ch):
+	"""Эмодзи и пиктограммы по диапазонам Юникода."""
 	code = ord(ch)
 	if 0x1F300 <= code <= 0x1FAFF:
 		return True
@@ -61,6 +62,7 @@ def is_emoji(ch):
 
 
 def has_markdown(text):
+	"""Есть ли заголовки, списки, цитаты, таблицы, жирный, код или эмодзи."""
 	for line in text.splitlines():
 		for pattern in MARKDOWN_LINE_RES:
 			if pattern.search(line):

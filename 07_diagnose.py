@@ -32,6 +32,7 @@ def token_logprobs(model, prompt_ids, response_ids, neo_id, vector):
 
 
 def top_next_tokens(model, tokenizer, prompt_ids, neo_id, vector, k=5):
+	"""k самых вероятных следующих токенов после промпта, с вероятностями."""
 	embeds = common.embed_ids(model, prompt_ids, neo_id, vector).unsqueeze(0)
 	logits = common.last_logits(model, embeds, 1)[0, -1].float()
 	probs = torch.softmax(logits, dim=-1)
